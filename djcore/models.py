@@ -21,7 +21,7 @@ class User(models.Model):
     username = property(_get_username)
 
     def __unicode__(self):
-        return self.get_username()
+        return self.email
 
     def get_username(self):
         if self.first_name + self.last_name != '':

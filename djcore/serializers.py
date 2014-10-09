@@ -1,11 +1,10 @@
 from djcore.backends import authenticate
 from rest_framework import serializers
 from rest_framework import exceptions
-from djcore.models import User
 from rest_framework_jwt.settings import api_settings
+from datetime import datetime
+import jwt
 
-
-jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
 
 
@@ -31,7 +30,7 @@ class JSONWebTokenSerializer(serializers.Serializer):
                 try:
                     if not user.is_active:
                         msg = 'User account is disabled.'
-                        raise serializers.ValidationError(msg)
+                        raise exceptions.AuthenticationFailed(msg)
 
 
                     payload = jwt_payload_handler(user)
@@ -41,11 +40,19 @@ class JSONWebTokenSerializer(serializers.Serializer):
                         'token': jwt_encode_handler(payload),
                         }
                 except :
-                    raise serializers.ValidationError(user)
+                    raise exceptions.AuthenticationFailed(user)
 
             else:
                 msg = 'Unable to login with provided credentials.'
                 raise exceptions.AuthenticationFailed(msg)
         else:
             msg = 'Must include "username" and "password"'
-            raise serializers.ValidationError(msg)
+            raise exceptions.AuthenticationFailed(msg)
+
+
+def jwt_payload_handler(user):
+    return {
+        'user_id': user.pk,
+        'email': user.email,
+        'exp': datetime.utcnow() + api_settings.JWT_EXPIRATION_DELTA
+    }
